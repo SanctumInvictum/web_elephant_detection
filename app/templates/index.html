@@ -59,10 +59,13 @@
     <button onclick="document.getElementById('fileInput').click()">Загрузить видео/изображение</button>
     <button onclick="startProcessing()">Запустить обработку</button>
     <button onclick="showProcessed()">Вывести результат</button>
+    <button onclick="downloadReport('excel')">Скачать Excel отчет</button>
+    <button onclick="downloadReport('pdf')">Скачать PDF отчет</button>
   </div>
 
   <video id="videoPlayer" controls style="display:none;"></video>
   <div id="status"></div>
+  <div id="statsSummary"></div>
 
   <script>
     let uploadedFilename = "";
@@ -127,6 +130,27 @@
         video.play().catch(() => {/* Обработка ошибок автовоспроизведения */});
     });
   }
+  async function loadStats() {
+    const response = await fetch("/stats/summary");
+    const data = await response.json();
+
+    const statsHtml = `
+        <h3>Общая статистика:</h3>
+        <p>Обработано файлов: ${data.total_files_processed}</p>
+        <p>Обнаружено слонов: ${data.total_elephants_detected}</p>
+        <p>Среднее время обработки: ${data.average_processing_time_ms.toFixed(2)} ms</p>
+    `;
+
+    document.getElementById("statsSummary").innerHTML = statsHtml;
+  }
+
+  function downloadReport(format) {
+      const endpoint = format === 'excel' ? '/stats/export/excel' : '/stats/export/pdf';
+      window.location.href = endpoint;
+  }
+
+  // Загружаем статистику при загрузке страницы
+  window.addEventListener('load', loadStats);
   </script>
 </body>
 </html>

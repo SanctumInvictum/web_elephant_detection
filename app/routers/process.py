@@ -48,6 +48,15 @@ async def process_file(request: Request):
         exist_ok=True
     )
 
+    detection_data = []
+    for result in results:
+        for box in result.boxes:
+            detection_data.append({
+                "class_id": int(box.cls),
+                "confidence": float(box.conf),
+                "bbox": box.xywhn.tolist()[0]  # Нормализованные координаты
+            })
+
     # Явное сохранение результатов
     for r in results:
         r.save()
@@ -90,7 +99,17 @@ async def process_file(request: Request):
     record = {
         "timestamp": datetime.utcnow().isoformat(),
         "input_file": filename,
-        "output_file": new_name
+        "output_file": new_name,
+        "processing_time": results[0].speed.get("inference", 0) if results else 0,
+        "detections": {
+            "total_elephants": len(detection_data),
+            "average_confidence": round(
+                (sum(d['confidence'] for d in detection_data) / len(detection_data))
+                if detection_data else 0,
+                4
+            ),
+            "detections_list": detection_data
+        }
     }
 
     try:
